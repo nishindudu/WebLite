@@ -1,5 +1,5 @@
 flask
 requests
 beautifulsoup4
-readability
 readability-lxml
+lxml_html_clean
