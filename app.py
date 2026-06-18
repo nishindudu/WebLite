@@ -61,6 +61,9 @@ class Page:
 
         page_parsed = BeautifulSoup(page_parsed, "html.parser")
         self.replace_links(page_parsed)
+
+        body = page_parsed.find("body")
+        body['style'] = "font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;"
         return page_parsed
 
 class WebUI:
