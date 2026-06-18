@@ -87,13 +87,14 @@ class WebUI:
         return render_template("index.html")
     
     
-    def run(self, debug=False):
-        self.app.run(host=self.host, port=self.port, debug=debug)
+    # def run(self, debug=False):
+    #     self.app.run(host=self.host, port=self.port, debug=debug)
 
 
 # meow = Page("https://en.wikipedia.org/wiki/Randomness")
 # print(meow.get_page())
 
+app = WebUI().app
 
 if __name__=="__main__":
-    WebUI().run(debug=True)
+    app.run(debug=True)
