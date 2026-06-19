@@ -1,8 +1,10 @@
+import io
 import requests
 from urllib.parse import urlparse, quote
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 from bs4 import BeautifulSoup
 from readability import Document
+from PIL import Image
 
 headers = {"User-Agent": "WebLite/0.1 (Webpage Debloater for Slow Networks)"}
 
@@ -54,13 +56,13 @@ class Page:
             except:
                 print("Error")
 
-    def remove_imgs(self, parsed_page):
+    def link_imgs(self, parsed_page):
         imgs = parsed_page.find_all("img")
         print(imgs)
         for img in imgs:
             curr_link = img['src']
             # img['src'] = f"http://{self.hostname}{curr_link}"
-            img['src'] = f"?img=https://{self.hostname}{curr_link}"
+            img['src'] = f"/convert_img?img=https://{self.hostname}{curr_link}"
     
 
     def get_page(self):
@@ -70,7 +72,7 @@ class Page:
 
         page_parsed = BeautifulSoup(page_parsed, "html.parser")
         self.replace_links(page_parsed)
-        self.remove_imgs(page_parsed)
+        self.link_imgs(page_parsed)
 
         body = page_parsed.find("body")
         body['style'] = "font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;"
@@ -82,7 +84,21 @@ class Page:
     
     def get_image(self):
         image_url = self.link
-        image = requests.get(image_url, headers=headers)
+        try:
+            image = requests.get(image_url, headers=headers)
+            image.raise_for_status()
+            input_img = io.BytesIO(image.content)
+
+            with Image.open(input_img) as img:
+                img = img.convert("RGB")
+                output_img = io.BytesIO()
+
+                img.save(output_img, format="webp", quality=80)
+                output_img.seek(0)
+                return output_img
+        except:
+            print("Image conversion failed")
+        return 0
 
 class WebUI:
     def __init__(self, host="127.0.0.1", port=5000):
@@ -93,6 +109,7 @@ class WebUI:
 
     def _register_routes(self):
         self.app.add_url_rule("/", "home", self.home)
+        self.app.add_url_rule("/convert_img", "convert_img", self.convert_img)
 
     def home(self):
         try:
@@ -102,16 +119,17 @@ class WebUI:
         if url:
             new_page = Page(url)
             return str(new_page.get_page())
-        
+        return render_template("index.html")
+    
+    def convert_img(self):
         try:
             img = request.args.get("img")
         except:
             pass
         if img:
             image = Page(img)
-            return image.get_image()
-
-        return render_template("index.html")
+            return send_file(image.get_image(), mimetype="image/webp", as_attachment=False)
+        return
     
     
     # def run(self, debug=False):
