@@ -44,6 +44,7 @@ class Page:
     def replace_links(self, page):
         # return page
         links = page.find_all("a")
+        print(links)
         for link in links:
             try:
                 if link['href'].startswith("#"):
@@ -52,6 +53,14 @@ class Page:
                     link['href'] = f"?url=https://{self.hostname}/{link['href']}"
             except:
                 print("Error")
+
+    def remove_imgs(self, parsed_page):
+        imgs = parsed_page.find_all("img")
+        print(imgs)
+        for img in imgs:
+            curr_link = img['src']
+            # img['src'] = f"http://{self.hostname}{curr_link}"
+            img['src'] = f"?img=https://{self.hostname}{curr_link}"
     
 
     def get_page(self):
@@ -61,10 +70,19 @@ class Page:
 
         page_parsed = BeautifulSoup(page_parsed, "html.parser")
         self.replace_links(page_parsed)
+        self.remove_imgs(page_parsed)
 
         body = page_parsed.find("body")
         body['style'] = "font-family: Arial, sans-serif; line-height: 1.6; margin: 20px;"
+        
+        page_parsed = str(page_parsed)
+        page_parsed = page_parsed.replace("\\n", "")
+        page_parsed = page_parsed.replace("<head></head>", f"<head><title>WebLite</title></head>")
         return page_parsed
+    
+    def get_image(self):
+        image_url = self.link
+        image = requests.get(image_url, headers=headers)
 
 class WebUI:
     def __init__(self, host="127.0.0.1", port=5000):
@@ -84,6 +102,15 @@ class WebUI:
         if url:
             new_page = Page(url)
             return str(new_page.get_page())
+        
+        try:
+            img = request.args.get("img")
+        except:
+            pass
+        if img:
+            image = Page(img)
+            return image.get_image()
+
         return render_template("index.html")
     
     
